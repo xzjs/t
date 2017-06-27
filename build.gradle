@@ -1,0 +1,56 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.2.RELEASE")
+        classpath('se.transmode.gradle:gradle-docker:1.2')
+    }
+}
+
+group = 'xzjs'
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'docker'
+
+jar {
+    baseName = 'test'
+    version =  '0.1.0'
+}
+
+repositories {
+    mavenLocal() //1.优先查找本地maven库，性能最好
+    maven{//2.其次查找aliyun maven库
+        url'http://maven.aliyun.com/nexus/content/groups/public/'
+    }
+    mavenCentral()//3.最后查找maven中央库
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+    compile("org.springframework.boot:spring-boot-starter-web")
+    compile fileTree(dir: "libs", include: "*.jar")
+    testCompile("org.springframework.boot:spring-boot-starter-test")
+}
+
+task buildDocker(type: Docker, dependsOn: build) {
+    push = false
+    applicationName = jar.baseName
+    dockerfile = file('src/main/docker/Dockerfile')
+    doFirst {
+        copy {
+            from jar
+            into stageDir
+        }
+
+        copy{
+            from 'libs/lib/libmsc64.so'
+            into stageDir
+        }
+    }
+}
